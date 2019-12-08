@@ -8,7 +8,7 @@ import org.hibernate.Transaction;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LabelDao {
+public class LabelDao implements BaseDao<Label> {
 
     private Session session;
 
@@ -26,6 +26,19 @@ public class LabelDao {
     public void save(Label label) {
         var transaction = session.beginTransaction();
         session.save(label);
+        transaction.commit();
+    }
+
+
+    public void update(Label label) {
+        var transaction = session.beginTransaction();
+        session.update(label);
+        transaction.commit();
+    }
+
+    public void delete(Label label) {
+        var transaction = session.beginTransaction();
+        session.delete(label);
         transaction.commit();
     }
 

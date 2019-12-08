@@ -5,9 +5,11 @@ import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
-public class UserDao {
+public class UserDao implements BaseDao<User> {
 
     private Session session;
 
@@ -24,10 +26,34 @@ public class UserDao {
 
     public void save(User user) {
         var transaction = session.beginTransaction();
-        session.persist(user);
+        session.save(user);
         transaction.commit();
     }
 
+    @Override
+    public void update(User user) {
+
+    }
+
+    @Override
+    public void delete(User user) {
+
+    }
+
+    @Override
+    public List<User> getAll() {
+        List<User> userList = new ArrayList<>();
+        Transaction transaction = null;
+
+        try (var session = DbUtil.getSessionFactory().getCurrentSession()) {
+            transaction = session.beginTransaction();
+            userList = session.createQuery("from User u", User.class).getResultList();
+            transaction.commit();
+        } catch (HibernateException e) {
+            e.printStackTrace();
+        }
+        return userList;
+    }
 
 
     public Optional<User> findByUsername(String username) {
@@ -53,6 +79,7 @@ public class UserDao {
 
 
 
+
     public Optional<User> findByEmail(String email) {
 
         Optional<User> user = Optional.empty();
@@ -74,6 +101,8 @@ public class UserDao {
         return user;
 
     }
+
+
 
 
 }

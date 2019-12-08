@@ -3,11 +3,21 @@ package com.amigox.todo;
 
 import com.amigox.todo.Entity.*;
 import com.amigox.todo.Util.HashUtil;
+import com.amigox.todo.api.ApiTodo;
+import com.amigox.todo.api.ApiUser;
+import com.amigox.todo.api.ApiUserService;
+import com.amigox.todo.net.ServiceGenerator;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.reflect.TypeToken;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
+import retrofit2.Response;
 import spark.ModelAndView;
 import spark.template.handlebars.HandlebarsTemplateEngine;
 
+import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
@@ -66,7 +76,7 @@ public class App {
             }
 
             req.session(true).attribute("user", username);
-            res.redirect("/todos/" + username);
+            res.redirect("" + username + "/todo");
             return null;
         });
 
@@ -89,9 +99,6 @@ public class App {
                 res.redirect("/register");
             }
 
-
-
-
             User newUser = new User();
             String[] fullName = params.get("fullName").split(" ");
             newUser.setFirstName(fullName[0]);
@@ -101,24 +108,25 @@ public class App {
             newUser.setPassword(HashUtil.passwordHash(params.get("password")));
 
 
-
             new UserDao().save(newUser);
             res.redirect("/login");
             return null;
         });
 
-        get("/todos", (req, res) -> {
-
-//                List<Todo> todoList = new TodoDao().getAll();
-//                System.out.println(todoList.toString());
-
+        get("/todo", (req, res) -> {
 
                 var model = Map.of("name", "All Todos", "todos", new TodoDao().getAll());
                 return render(model, "todos.hbs");
 
+
         });
 
-        get("/todos/:username", (req, res) -> {
+//TODO:        get("api/todo", (req, res) -> {
+//            res.type("application/json");
+//            return new Gson().toJson(StatusResponse)
+//        });
+
+        get("/:username/todo", (req, res) -> {
             String username = req.params(":username");
             Optional<User> thisUser = new UserDao().findByUsername(username);
             String name = thisUser.get().getFirstName().toUpperCase();
@@ -128,7 +136,7 @@ public class App {
 
         });
 
-        get("/addTodo", (req, res) -> {
+        get("/todo/:id", (req, res) -> {
 
             var allLabels = new LabelDao().getAll();
             var model = Map.of("name", "TODO", "labels", allLabels);
@@ -171,6 +179,7 @@ public class App {
             Optional<Todo> todo = new TodoDao().findBySlug(todoSlug);
 
             if (!todo.isEmpty()) {
+
                 var model = Map.of("name", "TODO", "labels", allLabels, "todo", todo);
 
                 return render(model, "updateTodo.hbs");
@@ -178,9 +187,12 @@ public class App {
             return null;
         });
 
-// TODO       put("/updateTodo/:slug", (req, res) -> {
+//        put("/updateTodo/, (req, res) -> {
 //
-//            String todoSlug = req.params(":slug");
+//               String idString = req.splat()[0];
+//               System.out.println(idString);
+//               Integer id = Integer.parseInt(idString);
+////            String todoSlug = req.params(":slug");
 //            List<NameValuePair> pairs = URLEncodedUtils.parse(req.body(), Charset.defaultCharset());
 //            Map<String, String> params = toMap(pairs);
 //
@@ -188,7 +200,7 @@ public class App {
 //            Optional<User> myUser = new UserDao().findByUsername(thisUsername);
 //
 //            if (!myUser.isEmpty()) {
-//                Optional<Todo> todo = new TodoDao().findBySlug(todoSlug);
+//                Optional<Todo> todo = new TodoDao().findById(id);
 //                if (!todo.isEmpty()) {
 //                    Todo updatedTodo = new Todo();
 //                    updatedTodo.setTitle(params.get("todoTitle"));
@@ -207,6 +219,38 @@ public class App {
 //
 //            return null;
 //        });
+        put("/updateTodo/", (req, res) -> {
+
+            String idString = req.splat()[0];
+            System.out.println(idString);
+            Integer id = Integer.parseInt(idString);
+//            String todoSlug = req.params(":slug");
+            List<NameValuePair> pairs = URLEncodedUtils.parse(req.body(), Charset.defaultCharset());
+            Map<String, String> params = toMap(pairs);
+
+            String thisUsername = req.session().attribute("user");
+            Optional<User> myUser = new UserDao().findByUsername(thisUsername);
+
+            if (!myUser.isEmpty()) {
+                Optional<Todo> todo = new TodoDao().findById(id);
+                if (!todo.isEmpty()) {
+                    Todo updatedTodo = new Todo();
+                    updatedTodo.setTitle(params.get("todoTitle"));
+                    updatedTodo.setNote(params.get("todoNote"));
+                    updatedTodo.setPriority(Integer.parseInt(params.get("priority")));
+//                    updatedTodo.setUser(myUser.get());
+                    //                newTodo.setLabels(params.get("labels"));
+
+
+                    new TodoDao().update(updatedTodo);
+                    res.redirect("/todos");
+
+                }
+
+            }
+
+            return null;
+        });
 
         get("/addLabel",(req, res) -> render(new HashMap<>(), "addLabel.hbs"));
 
@@ -223,11 +267,46 @@ public class App {
             return null;
         });
 
+        path("/api", () -> {
+            Gson gson = new Gson();
 
+            get("/user/my_repos", (req, res) -> {
+                ApiUserService service = ServiceGenerator.createAuthorizedService(ApiUserService.class);
+                Response<JsonArray> myTodos = service.getMyTodos("private").execute();
 
-        
+                Type listType = new TypeToken<List<ApiTodo>>() {}.getType();
+                return new Gson().fromJson(myTodos.body(), listType);
+            }, gson::toJson);
 
+            get("/users/:username", (req, res) -> {
+                String username = req.params(":username");
+                ApiUserService service = ServiceGenerator.createService(ApiUserService.class);
+                ApiUser user = null;
 
+                try {
+                    Response<ApiUser> response = service.getByUsername(username).execute();
+                    user = response.body();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                return user;
+            }, gson::toJson);
+            get("/users/:username/todo", (req, res) -> {
+                String username = req.params(":username");
+                ApiUserService service = ServiceGenerator.createService(ApiUserService.class);
+
+                try {
+                    Response<JsonArray> response = service.getUserTodo(username).execute();
+                    ApiTodo todo = gson.fromJson(response.body(), ApiTodo.class);
+                    System.out.println(todo.getTitle());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                return "";
+            });
+        });
         enableDebugScreen();
     }
 

@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class TodoDao {
+public class TodoDao implements BaseDao<Todo>{
 
     private Session session;
 
@@ -35,11 +35,13 @@ public class TodoDao {
             transaction.commit();
         } catch (HibernateException e) {
             e.printStackTrace();
+            if (transaction != null) {
+                transaction.rollback();
+            }
         }
 
         return todoList;
     }
-
 
     public List<Todo> getAllByUsername(String username) {
 
@@ -53,6 +55,9 @@ public class TodoDao {
             transaction.commit();
         } catch (HibernateException e) {
             e.printStackTrace();
+            if (transaction != null) {
+                transaction.rollback();
+            }
         }
 
         return todoList;
@@ -60,7 +65,7 @@ public class TodoDao {
 
     public Optional<Todo> findById(int id) {
         Optional<Todo> todo = Optional.empty();
-        Transaction transaction;
+        Transaction transaction = null;
 
         try (var session = DbUtil.getSessionFactory().getCurrentSession()) {
             transaction = session.beginTransaction();
@@ -73,6 +78,9 @@ public class TodoDao {
             transaction.commit();
         } catch (HibernateException e) {
             e.printStackTrace();
+            if (transaction != null) {
+                transaction.rollback();
+            }
         }
 
         return todo;
@@ -80,7 +88,7 @@ public class TodoDao {
 
     public Optional<Todo> findBySlug(String slug) {
         Optional<Todo> todo = Optional.empty();
-        Transaction transaction;
+        Transaction transaction = null;
 
         try (var session = DbUtil.getSessionFactory().getCurrentSession()) {
             transaction = session.beginTransaction();
@@ -93,6 +101,9 @@ public class TodoDao {
             transaction.commit();
         } catch (HibernateException e) {
             e.printStackTrace();
+            if (transaction != null) {
+                transaction.rollback();
+            }
         }
 
         return todo;
@@ -109,6 +120,12 @@ public class TodoDao {
     public void update(Todo todo){
         var transaction = session.beginTransaction();
         session.update(todo);
+        transaction.commit();
+    }
+
+    public void delete(Todo todo) {
+        var transaction = session.beginTransaction();
+        session.delete(todo);
         transaction.commit();
     }
 

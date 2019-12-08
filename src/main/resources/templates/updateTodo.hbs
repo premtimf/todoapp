@@ -19,14 +19,14 @@
                               Edit Todo
                           </div>
                           <div class="card-body">
-                              <form action="/updateTodo/{{todo.slug}}" method="put">
+                              <form action="/updateTodo/" method="put">
                                   <div class="form-group">
                                       <label for="todoTitle">Note Title</label>
-                                      <input type="text" id="todoTitle" name="todoTitle" class="form-control" value="{{todo.title}}">
+                                      <input type="text" id="todoTitle" name="todoTitle" class="form-control" value="{{todo.title}}">{{todo.title}}</input>
                                   </div>
                                   <div class="form-group">
                                       <label for="todoNote">Note</label>
-                                      <textarea type="text" rows="5" id="todoNote" name="todoNote" class="form-control" value="{{todo.note}}"></textarea>
+                                      <textarea type="text" rows="5" id="todoNote" name="todoNote" class="form-control" value="{{todo.note}}">{{todo.note}}</textarea>
                                   </div>
                                   <div class="form-group">
                                       <label for="todoLabels">Labels: </label>
