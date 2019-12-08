@@ -136,7 +136,7 @@ public class App {
 
         });
 
-        get("/todo/:id", (req, res) -> {
+        get("/addTodo", (req, res) -> {
 
             var allLabels = new LabelDao().getAll();
             var model = Map.of("name", "TODO", "labels", allLabels);
