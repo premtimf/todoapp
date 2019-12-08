@@ -6,7 +6,9 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 
 import javax.persistence.NoResultException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class TodoDao {
 
@@ -38,30 +40,8 @@ public class TodoDao {
         return todoList;
     }
 
-    public Optional<Todo> findByUsername(Integer id) {
-        Optional<Todo> todo = Optional.empty();
-        Transaction transaction;
-
-        try (var session = DbUtil.getSessionFactory().getCurrentSession()) {
-            transaction = session.beginTransaction();
-            todo = session.createQuery("from Todo t where t.id = :id", Todo.class)
-                    .setParameter("id", id)
-                    .setMaxResults(1)
-                    .getResultList()
-                    .stream()
-                    .findFirst();
-            transaction.commit();
-        } catch (HibernateException e) {
-            e.printStackTrace();
-        }
-
-        return todo;
-    }
-
 
     public List<Todo> getAllByUsername(String username) {
-
-
 
         List<Todo> todoList = new ArrayList<>();
         Transaction transaction = null;
@@ -78,8 +58,45 @@ public class TodoDao {
         return todoList;
     }
 
+    public Optional<Todo> findById(int id) {
+        Optional<Todo> todo = Optional.empty();
+        Transaction transaction;
 
+        try (var session = DbUtil.getSessionFactory().getCurrentSession()) {
+            transaction = session.beginTransaction();
+            todo = session.createQuery("from Todo a where a.id = :id", Todo.class)
+                    .setParameter("id", id)
+                    .setMaxResults(1)
+                    .getResultList()
+                    .stream()
+                    .findFirst();
+            transaction.commit();
+        } catch (HibernateException e) {
+            e.printStackTrace();
+        }
 
+        return todo;
+    }
+
+    public Optional<Todo> findBySlug(String slug) {
+        Optional<Todo> todo = Optional.empty();
+        Transaction transaction;
+
+        try (var session = DbUtil.getSessionFactory().getCurrentSession()) {
+            transaction = session.beginTransaction();
+            todo = session.createQuery("from Todo a where a.slug = :slug", Todo.class)
+                    .setParameter("slug", slug)
+                    .setMaxResults(1)
+                    .getResultList()
+                    .stream()
+                    .findFirst();
+            transaction.commit();
+        } catch (HibernateException e) {
+            e.printStackTrace();
+        }
+
+        return todo;
+    }
 
 
 

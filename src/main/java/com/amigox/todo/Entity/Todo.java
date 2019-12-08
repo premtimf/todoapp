@@ -20,8 +20,10 @@ public class Todo {
     @JoinColumn(name = "user_id", referencedColumnName = "user_id", nullable = false)
     User user;
     String title;
+    @Column(unique = true)
+    String slug;
     String note;
-    @ManyToMany(cascade = { CascadeType.ALL })
+    @ManyToMany(cascade = { CascadeType.PERSIST })
     @JoinTable(
             name = "Todo_Label",
             joinColumns = { @JoinColumn(name = "todo_id") },

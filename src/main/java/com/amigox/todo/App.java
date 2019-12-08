@@ -2,16 +2,17 @@ package com.amigox.todo;
 
 
 import com.amigox.todo.Entity.*;
+import com.amigox.todo.Util.HashUtil;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-
-import com.amigox.todo.Util.HashUtil;
-import org.jetbrains.annotations.NotNull;
 import spark.ModelAndView;
 import spark.template.handlebars.HandlebarsTemplateEngine;
 
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static spark.Spark.*;
 import static spark.debug.DebugScreen.enableDebugScreen;
@@ -154,27 +155,57 @@ public class App {
 //                newTodo.setLabels(params.get("labels"));
 
                 new TodoDao().save(newTodo);
-                res.redirect("/todos");
+                res.redirect("/todos/"+thisUsername);
 
             }
 
            return null;
 
         }));
-//TODO
-//        get("/updateTodo/:id", (req, res) -> {
+
+        get("/updateTodo/:slug", (req, res) -> {
+
+            String todoSlug = req.params(":slug");
+
+            var allLabels = new LabelDao().getAll();
+            Optional<Todo> todo = new TodoDao().findBySlug(todoSlug);
+
+            if (!todo.isEmpty()) {
+                var model = Map.of("name", "TODO", "labels", allLabels, "todo", todo);
+
+                return render(model, "updateTodo.hbs");
+            }
+            return null;
+        });
+
+// TODO       put("/updateTodo/:slug", (req, res) -> {
 //
-//            var todoId = Integer.parseInt(":id");
-//            var allLabels = new LabelDao().getAll();
-//            Optional<Todo> todo = new TodoDao().findByUsername(todoId);
+//            String todoSlug = req.params(":slug");
+//            List<NameValuePair> pairs = URLEncodedUtils.parse(req.body(), Charset.defaultCharset());
+//            Map<String, String> params = toMap(pairs);
 //
-//            if (!todo.isEmpty()) {
-//                var model = Map.of("name", "TODO", "labels", allLabels, "todo", todo);
+//            String thisUsername = req.session().attribute("user");
+//            Optional<User> myUser = new UserDao().findByUsername(thisUsername);
 //
-//                return render(model, "updateTodo.hbs");
+//            if (!myUser.isEmpty()) {
+//                Optional<Todo> todo = new TodoDao().findBySlug(todoSlug);
+//                if (!todo.isEmpty()) {
+//                    Todo updatedTodo = new Todo();
+//                    updatedTodo.setTitle(params.get("todoTitle"));
+//                    updatedTodo.setNote(params.get("todoNote"));
+//                    updatedTodo.setPriority(Integer.parseInt(params.get("priority")));
+////                    updatedTodo.setUser(myUser.get());
+//                    //                newTodo.setLabels(params.get("labels"));
+//
+//
+//                    new TodoDao().update(updatedTodo);
+//                    res.redirect("/todos");
+//
+//                }
+//
 //            }
-//            return null;
 //
+//            return null;
 //        });
 
         get("/addLabel",(req, res) -> render(new HashMap<>(), "addLabel.hbs"));

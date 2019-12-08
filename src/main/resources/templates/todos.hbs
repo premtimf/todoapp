@@ -20,7 +20,13 @@
                   {{#each todos}}
                       <li><h2>{{this.title}}</h2></li>
                       <li>{{this.note}}</li>
-                      <a class="btn btn-success btn-sm pull-left" href="/updateTodo/">Update</a>
+<!--                  Todo: list related labels -->
+<!--                        <ul>-->
+<!--                            -->
+<!--                            <li><a href=""></a></li>-->
+<!--                        -->
+<!--                        </ul>-->
+                      <a class="btn btn-success btn-sm pull-left" href="/updateTodo/{{this.slug}}">Update</a>
                   {{/each}}
               </ul>
                       <div class="add-task-row">

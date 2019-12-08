@@ -7,7 +7,6 @@ import org.hibernate.Transaction;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class LabelDao {
 
@@ -43,31 +42,6 @@ public class LabelDao {
         }
 
         return labelList;
-    }
-
-
-
-
-    public Optional<User> findByEmail(String email) {
-
-        Optional<User> user = Optional.empty();
-        Transaction transaction;
-
-        try (var session = DbUtil.getSessionFactory().getCurrentSession()) {
-            transaction = session.beginTransaction();
-            user = session.createQuery("from User a where a.email = :email", User.class)
-                    .setParameter("email", email)
-                    .setMaxResults(1)
-                    .getResultList()
-                    .stream()
-                    .findFirst();
-            transaction.commit();
-        } catch (HibernateException e) {
-            e.printStackTrace();
-        }
-
-        return user;
-
     }
 
 
