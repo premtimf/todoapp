@@ -37,6 +37,7 @@ public class App {
         staticFiles.location("/public");
         port(8080);
         // DbUtil.getSessionFactory().getCurrentSession();
+
         get("/", (req, res) -> {
 
             var model = Map.of("name", "TODO", "todos", new TodoDao().getAll());
@@ -113,158 +114,174 @@ public class App {
             return null;
         });
 
-        get("/todo", (req, res) -> {
+        before("/todo/*", (request, response) -> {
+            boolean authenticated = false;
+            if(!request.session().attributes().isEmpty()){
+                authenticated = true;
+            }
+            // ... check if authenticated
 
-                var model = Map.of("name", "All Todos", "todos", new TodoDao().getAll());
-                return render(model, "todos.hbs");
-
-
+            if (!authenticated) {
+                halt(401, "You are not welcome here");
+            }
         });
+
+//        get("/todo", (req, res) -> {
+//
+//                var model = Map.of("name", "All Todos", "todos", new TodoDao().getAll());
+//                return render(model, "todos.hbs");
+//
+//
+//        });
 
 //TODO:        get("api/todo", (req, res) -> {
 //            res.type("application/json");
 //            return new Gson().toJson(StatusResponse)
 //        });
 
-        get("/:username/todo", (req, res) -> {
-            String username = req.params(":username");
-            Optional<User> thisUser = new UserDao().findByUsername(username);
-            String name = thisUser.get().getFirstName().toUpperCase();
 
-            var model = Map.of("name", name, "todos", new TodoDao().getAllByUsername(username));
-            return render(model, "todos.hbs");
+        path("/todo", () -> {
+            get("/:username", (req, res) -> {
+                String username = req.params(":username");
+                Optional<User> thisUser = new UserDao().findByUsername(username);
+                String name = thisUser.get().getFirstName().toUpperCase();
 
-        });
+                var model = Map.of("name", name, "todos", new TodoDao().getAllByUsername(username));
+                return render(model, "todos.hbs");
 
-        get("/addTodo", (req, res) -> {
+            });
 
-            var allLabels = new LabelDao().getAll();
-            var model = Map.of("name", "TODO", "labels", allLabels);
+            get("/addTodo", (req, res) -> {
 
-
-
-            return  render(model, "addTodo.hbs");
-
-        });
-
-        post("/addTodo", ((req, res) -> {
-            List<NameValuePair> pairs = URLEncodedUtils.parse(req.body(), Charset.defaultCharset());
-            Map<String, String> params = toMap(pairs);
-
-            String thisUsername = req.session().attribute("user");
-            Optional<User> myUser = new UserDao().findByUsername(thisUsername);
-
-            if (!myUser.isEmpty()) {
-                Todo newTodo = new Todo();
-                newTodo.setTitle(params.get("todoTitle"));
-                newTodo.setNote(params.get("todoNote"));
-                newTodo.setPriority(Integer.parseInt(params.get("priority")));
-                newTodo.setUser(myUser.get());
-//                newTodo.setLabels(params.get("labels"));
-
-                new TodoDao().save(newTodo);
-                res.redirect("/todos/"+thisUsername);
-
-            }
-
-           return null;
-
-        }));
-
-        get("/updateTodo/:slug", (req, res) -> {
-
-            String todoSlug = req.params(":slug");
-
-            var allLabels = new LabelDao().getAll();
-            Optional<Todo> todo = new TodoDao().findBySlug(todoSlug);
-
-            if (!todo.isEmpty()) {
-
-                var model = Map.of("name", "TODO", "labels", allLabels, "todo", todo);
-
-                return render(model, "updateTodo.hbs");
-            }
-            return null;
-        });
-
-//        put("/updateTodo/, (req, res) -> {
-//
-//               String idString = req.splat()[0];
-//               System.out.println(idString);
-//               Integer id = Integer.parseInt(idString);
-////            String todoSlug = req.params(":slug");
-//            List<NameValuePair> pairs = URLEncodedUtils.parse(req.body(), Charset.defaultCharset());
-//            Map<String, String> params = toMap(pairs);
-//
-//            String thisUsername = req.session().attribute("user");
-//            Optional<User> myUser = new UserDao().findByUsername(thisUsername);
-//
-//            if (!myUser.isEmpty()) {
-//                Optional<Todo> todo = new TodoDao().findById(id);
-//                if (!todo.isEmpty()) {
-//                    Todo updatedTodo = new Todo();
-//                    updatedTodo.setTitle(params.get("todoTitle"));
-//                    updatedTodo.setNote(params.get("todoNote"));
-//                    updatedTodo.setPriority(Integer.parseInt(params.get("priority")));
-////                    updatedTodo.setUser(myUser.get());
-//                    //                newTodo.setLabels(params.get("labels"));
-//
-//
-//                    new TodoDao().update(updatedTodo);
-//                    res.redirect("/todos");
-//
-//                }
-//
-//            }
-//
-//            return null;
-//        });
-        put("/updateTodo/", (req, res) -> {
-
-            String idString = req.splat()[0];
-            System.out.println(idString);
-            Integer id = Integer.parseInt(idString);
-//            String todoSlug = req.params(":slug");
-            List<NameValuePair> pairs = URLEncodedUtils.parse(req.body(), Charset.defaultCharset());
-            Map<String, String> params = toMap(pairs);
-
-            String thisUsername = req.session().attribute("user");
-            Optional<User> myUser = new UserDao().findByUsername(thisUsername);
-
-            if (!myUser.isEmpty()) {
-                Optional<Todo> todo = new TodoDao().findById(id);
-                if (!todo.isEmpty()) {
-                    Todo updatedTodo = new Todo();
-                    updatedTodo.setTitle(params.get("todoTitle"));
-                    updatedTodo.setNote(params.get("todoNote"));
-                    updatedTodo.setPriority(Integer.parseInt(params.get("priority")));
-//                    updatedTodo.setUser(myUser.get());
-                    //                newTodo.setLabels(params.get("labels"));
+                var allLabels = new LabelDao().getAll();
+                var model = Map.of("name", "TODO", "labels", allLabels);
 
 
-                    new TodoDao().update(updatedTodo);
-                    res.redirect("/todos");
+
+                return  render(model, "addTodo.hbs");
+
+            });
+
+            post("/addTodo", ((req, res) -> {
+                List<NameValuePair> pairs = URLEncodedUtils.parse(req.body(), Charset.defaultCharset());
+                Map<String, String> params = toMap(pairs);
+
+                String thisUsername = req.session().attribute("user");
+                Optional<User> myUser = new UserDao().findByUsername(thisUsername);
+
+                if (!myUser.isEmpty()) {
+                    Todo newTodo = new Todo();
+                    newTodo.setTitle(params.get("todoTitle"));
+                    newTodo.setNote(params.get("todoNote"));
+                    newTodo.setPriority(Integer.parseInt(params.get("priority")));
+                    newTodo.setUser(myUser.get());
+    //                newTodo.setLabels(params.get("labels"));
+
+                    new TodoDao().save(newTodo);
+                    res.redirect("/todo"+thisUsername);
 
                 }
 
-            }
+               return null;
 
-            return null;
-        });
+            }));
 
-        get("/addLabel",(req, res) -> render(new HashMap<>(), "addLabel.hbs"));
+            get("/updateTodo/:slug", (req, res) -> {
 
-        post("/addLabel", (req, res) -> {
-            List<NameValuePair> pairs = URLEncodedUtils.parse(req.body(), Charset.defaultCharset());
-            Map<String, String> params = toMap(pairs);
+                String todoSlug = req.params(":slug");
 
-            Label newLabel = new Label();
-            newLabel.setName(params.get("labelName"));
-            newLabel.setSlug(params.get("labelSlug"));
+                var allLabels = new LabelDao().getAll();
+                Optional<Todo> todo = new TodoDao().findBySlug(todoSlug);
 
-            new LabelDao().save(newLabel);
-            res.redirect("/todos");
-            return null;
+                if (!todo.isEmpty()) {
+
+                    var model = Map.of("name", "TODO", "labels", allLabels, "todo", todo);
+
+                    return render(model, "updateTodo.hbs");
+                }
+                return null;
+            });
+
+    //        put("/updateTodo/, (req, res) -> {
+    //
+    //               String idString = req.splat()[0];
+    //               System.out.println(idString);
+    //               Integer id = Integer.parseInt(idString);
+    ////            String todoSlug = req.params(":slug");
+    //            List<NameValuePair> pairs = URLEncodedUtils.parse(req.body(), Charset.defaultCharset());
+    //            Map<String, String> params = toMap(pairs);
+    //
+    //            String thisUsername = req.session().attribute("user");
+    //            Optional<User> myUser = new UserDao().findByUsername(thisUsername);
+    //
+    //            if (!myUser.isEmpty()) {
+    //                Optional<Todo> todo = new TodoDao().findById(id);
+    //                if (!todo.isEmpty()) {
+    //                    Todo updatedTodo = new Todo();
+    //                    updatedTodo.setTitle(params.get("todoTitle"));
+    //                    updatedTodo.setNote(params.get("todoNote"));
+    //                    updatedTodo.setPriority(Integer.parseInt(params.get("priority")));
+    ////                    updatedTodo.setUser(myUser.get());
+    //                    //                newTodo.setLabels(params.get("labels"));
+    //
+    //
+    //                    new TodoDao().update(updatedTodo);
+    //                    res.redirect("/todos");
+    //
+    //                }
+    //
+    //            }
+    //
+    //            return null;
+    //        });
+            put("/updateTodo/", (req, res) -> {
+
+                String idString = req.splat()[0];
+                System.out.println(idString);
+                Integer id = Integer.parseInt(idString);
+    //            String todoSlug = req.params(":slug");
+                List<NameValuePair> pairs = URLEncodedUtils.parse(req.body(), Charset.defaultCharset());
+                Map<String, String> params = toMap(pairs);
+
+                String thisUsername = req.session().attribute("user");
+                Optional<User> myUser = new UserDao().findByUsername(thisUsername);
+
+                if (!myUser.isEmpty()) {
+                    Optional<Todo> todo = new TodoDao().findById(id);
+                    if (!todo.isEmpty()) {
+                        Todo updatedTodo = new Todo();
+                        updatedTodo.setTitle(params.get("todoTitle"));
+                        updatedTodo.setNote(params.get("todoNote"));
+                        updatedTodo.setPriority(Integer.parseInt(params.get("priority")));
+    //                    updatedTodo.setUser(myUser.get());
+                        //                newTodo.setLabels(params.get("labels"));
+
+
+                        new TodoDao().update(updatedTodo);
+                        res.redirect("/todos");
+
+                    }
+
+                }
+
+                return null;
+            });
+
+            get("/addLabel",(req, res) -> render(new HashMap<>(), "addLabel.hbs"));
+
+            post("/addLabel", (req, res) -> {
+                List<NameValuePair> pairs = URLEncodedUtils.parse(req.body(), Charset.defaultCharset());
+                Map<String, String> params = toMap(pairs);
+
+                Label newLabel = new Label();
+                newLabel.setName(params.get("labelName"));
+                newLabel.setSlug(params.get("labelSlug"));
+
+                new LabelDao().save(newLabel);
+                res.redirect("/todos");
+                return null;
+            });
+
         });
 
         path("/api", () -> {
